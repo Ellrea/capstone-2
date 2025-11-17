@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>CodeRadar - 관리자 페이지</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./css/Admin_web.css" />
+</head>
+
+<body>
+  
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <h1 class="logo">CodeRadar<span class="logo-admin">Admin</span></h1>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="dashboard">
+          <span class="icon">📊</span> 대시보드
+        </a>
+        <a href="#" class="nav-item" data-view="history">
+          <span class="icon">🔍</span> 분석 내역
+        </a>
+        <a href="#" class="nav-item" data-view="users">
+          <span class="icon">👥</span> 사용자 관리
+        </a>
+        <a href="#" class="nav-item" data-view="settings">
+          <span class="icon">⚙️</span> 설정
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <strong>admin@coderadar.com</strong>
+          <span class="muted">관리자</span>
+        </div>
+        <button class="btn btn-logout">로그아웃</button>
+      </div>
+    </aside>
+
+    <main class="admin-content">
+
+      <!-- ===== Dashboard ===== -->
+      <div id="view-dashboard" class="view-content">
+        <header class="content-header">
+          <h2>대시보드</h2>
+          <div class="header-actions">
+            <button class="btn primary">
+              <span class="icon-sm">+</span> 새 리포트 생성
+            </button>
+          </div>
+        </header>
+
+        <section class="stat-cards">
+          <div class="panel stat-card">
+            <div class="muted">총 분석 건수</div>
+            <div class="stat-value">1,482</div>
+          </div>
+          <div class="panel stat-card">
+            <div class="muted">오늘 악성 파일 (24h)</div>
+            <div class="stat-value bad">31</div>
+          </div>
+          <div class="panel stat-card">
+            <div class="muted">활성 사용자</div>
+            <div class="stat-value">224</div>
+          </div>
+        </section>
+
+        <!-- ✅ 헬스체크 패널 (API 연결 데모) -->
+        <section class="panel" id="health-panel" aria-live="polite">
+          <div style="display:flex; align-items:center; gap:12px; justify-content:space-between; flex-wrap:wrap;">
+            <h3 style="margin:0;">서버 상태</h3>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn" id="healthBtn">헬스체크</button>
+              <span class="muted" id="healthStatus">대기</span>
+            </div>
+          </div>
+          <pre id="healthRaw" class="raw" style="margin-top:8px; white-space:pre-wrap; word-break:break-all;"></pre>
+        </section>
+
+        <section class="panel">
+          <h3 style="margin-top:0;">최근 분석 내역</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>파일 ID</th>
+                  <th>파일명</th>
+                  <th>요청자</th>
+                  <th>결과</th>
+                  <th>분석일</th>
+                  <th>동작</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="muted">#8a2be2</td>
+                  <td><strong>patch_v1.exe</strong></td>
+                  <td>user@example.com</td>
+                  <td><span class="tag bad">악성 코드</span></td>
+                  <td class="muted">2025-10-30 10:55</td>
+                  <td><button class="btn">상세</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#5f9ea0</td>
+                  <td><strong>report_final.pdf</strong></td>
+                  <td>guest@example.com</td>
+                  <td><span class="tag ok">정상 코드</span></td>
+                  <td class="muted">2025-10-30 10:52</td>
+                  <td><button class="btn">상세</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#7fff00</td>
+                  <td><strong>setup.zip</strong></td>
+                  <td>admin@coderadar.com</td>
+                  <td><span class="tag fail">판별 실패</span></td>
+                  <td class="muted">2025-10-30 10:48</td>
+                  <td><button class="btn">상세</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#d2691e</td>
+                  <td><strong>init.py</strong></td>
+                  <td>user2@example.com</td>
+                  <td><span class="tag ok">정상 코드</span></td>
+                  <td class="muted">2025-10-30 10:45</td>
+                  <td><button class="btn">상세</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== History ===== -->
+      <div id="view-history" class="view-content hidden">
+        <header class="content-header">
+          <h2>분석 내역</h2>
+          <div class="search-box">
+            <input type="text" placeholder="파일 이름, 요청자 검색" class="search-input" />
+            <button class="btn primary">검색</button>
+          </div>
+        </header>
+
+        <section class="panel">
+          <h3 style="margin-top:0;">전체 분석 로그 (1,482건)</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>파일 ID</th>
+                  <th>파일명</th>
+                  <th>결과</th>
+                  <th>위협 유형</th>
+                  <th>요청자</th>
+                  <th>분석일</th>
+                  <th>동작</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="muted">#8a2be2</td>
+                  <td><strong>patch_v1.exe</strong></td>
+                  <td><span class="tag bad">악성 코드</span></td>
+                  <td>Trojan.Generic</td>
+                  <td>user@example.com</td>
+                  <td class="muted">2025-10-30 10:55</td>
+                  <td><button class="btn">상세 리포트</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#5f9ea0</td>
+                  <td><strong>report_final.pdf</strong></td>
+                  <td><span class="tag ok">정상 코드</span></td>
+                  <td>Clean</td>
+                  <td>guest@example.com</td>
+                  <td class="muted">2025-10-30 10:52</td>
+                  <td><button class="btn">상세 리포트</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#d2691e</td>
+                  <td><strong>init.py</strong></td>
+                  <td><span class="tag ok">정상 코드</span></td>
+                  <td>Clean</td>
+                  <td>user2@example.com</td>
+                  <td class="muted">2025-10-30 10:45</td>
+                  <td><button class="btn">상세 리포트</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#7fff00</td>
+                  <td><strong>setup.zip</strong></td>
+                  <td><span class="tag fail">판별 실패</span></td>
+                  <td>N/A</td>
+                  <td>admin@coderadar.com</td>
+                  <td class="muted">2025-10-30 10:48</td>
+                  <td><button class="btn">상세 리포트</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="pagination">
+          <button class="btn">이전</button>
+          <span class="muted">페이지 1 / 15</span>
+          <button class="btn">다음</button>
+        </div>
+      </div>
+
+      <!-- ===== Users ===== -->
+      <div id="view-users" class="view-content hidden">
+        <header class="content-header">
+          <h2>사용자 관리</h2>
+          <button class="btn primary">
+            <span class="icon-sm">+</span> 새 사용자 추가
+          </button>
+        </header>
+
+        <section class="panel">
+          <h3 style="margin-top:0;">전체 사용자 (224명)</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>사용자 ID</th>
+                  <th>이메일</th>
+                  <th>권한</th>
+                  <th>상태</th>
+                  <th>가입일</th>
+                  <th>동작</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="muted">#001</td>
+                  <td><strong>admin@coderadar.com</strong></td>
+                  <td><span class="tag bad">관리자</span></td>
+                  <td><span class="tag ok">활성</span></td>
+                  <td class="muted">2025-01-01</td>
+                  <td><button class="btn">편집</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#002</td>
+                  <td><strong>user@example.com</strong></td>
+                  <td><span class="tag ok">사용자</span></td>
+                  <td><span class="tag ok">활성</span></td>
+                  <td class="muted">2025-03-15</td>
+                  <td><button class="btn">편집</button></td>
+                </tr>
+                <tr>
+                  <td class="muted">#003</td>
+                  <td><strong>guest@example.com</strong></td>
+                  <td><span class="tag">사용자</span></td>
+                  <td><span class="tag fail">비활성</span></td>
+                  <td class="muted">2025-05-20</td>
+                  <td><button class="btn">편집</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ===== Settings ===== -->
+      <div id="view-settings" class="view-content hidden">
+        <header class="content-header">
+          <h2>설정</h2>
+          <button class="btn primary">
+            <span class="icon-sm">💾</span> 변경사항 저장
+          </button>
+        </header>
+
+        <section class="panel">
+          <h3 style="margin-top:0;">API 키 관리</h3>
+          <div class="form-group">
+            <label for="api-key" class="form-label">현재 API 키</label>
+            <input type="text" id="api-key" class="form-control" value="CR-xxxx-xxxx-xxxx-xxxx" disabled>
+          </div>
+          <div class="form-group">
+            <label for="api-limit" class="form-label">일일 요청 한도</label>
+            <input type="number" id="api-limit" class="form-control" value="1000">
+            <p class="muted" style="margin-top: 8px;">일일 최대 분석 요청 횟수를 설정합니다.</p>
+          </div>
+          <button class="btn">API 키 재발급</button>
+        </section>
+
+        <section class="panel" style="margin-top: 24px;">
+          <h3 style="margin-top:0;">알림 설정</h3>
+          <div class="form-group">
+            <label class="form-label">악성 코드 감지 시 알림</label>
+            <div class="form-check">
+              <input type="checkbox" id="check-email" checked>
+              <label for="check-email">이메일로 받기</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" id="check-slack">
+              <label for="check-slack">Slack으로 받기</label>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ✅ 모듈 스크립트: view 전환 + 헬스체크(API) -->
+  <script type="module">
+    // 1) 화면 전환 로직
+    const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+    const viewContents = document.querySelectorAll('.view-content');
+
+    navItems.forEach(item => {
+      if (item.getAttribute('data-view')) {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetView = item.getAttribute('data-view');
+          const targetElement = document.getElementById(`view-${targetView}`);
+          if (!targetElement) {
+            console.warn(`[ViewSwitch] Target view "${targetView}" not found.`);
+            return;
+          }
+          viewContents.forEach(v => v.classList.add('hidden'));
+          targetElement.classList.remove('hidden');
+          navItems.forEach(n => n.classList.remove('active'));
+          item.classList.add('active');
+        });
+      }
+    });
+
+    // 2) API import (shared/js/api.js)
+    import { healthCheck } from "../shared/js/api.js";
+
+    // 3) 헬스체크 버튼 동작
+    const healthBtn = document.getElementById("healthBtn");
+    const healthStatus = document.getElementById("healthStatus");
+    const healthRaw = document.getElementById("healthRaw");
+
+    if (healthBtn) {
+      healthBtn.addEventListener("click", async () => {
+        healthBtn.disabled = true;
+        healthStatus.textContent = "확인 중...";
+        healthRaw.textContent = "";
+
+        try {
+          const data = await healthCheck();             // ✅ API 호출
+          const status = (data && data.status) || "응답 수신";
+          healthStatus.textContent = `상태: ${status}`;
+          healthRaw.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          healthStatus.textContent = "오류";
+          healthRaw.textContent = String(err?.message || err);
+        } finally {
+          healthBtn.disabled = false;
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
