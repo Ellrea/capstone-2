@@ -18,7 +18,7 @@ CKPT_PATH = os.getenv("CKPT_PATH", "app/runs/resnet50_malimg.ckpt")
 LABELS_PATH = os.getenv("LABELS_PATH", "app/labels.json")
 
 IMG_SIZE = int(os.getenv("IMG_SIZE", "256"))
-MAX_FILE_MB = float(os.getenv("MAX_FILE_MB", "50"))
+MAX_FILE_MB = float(os.getenv("MAX_FILE_MB", "20")) # 용량제한 27MB도 서버 터짐 
 CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
