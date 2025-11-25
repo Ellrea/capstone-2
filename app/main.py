@@ -1,8 +1,9 @@
-import os, json, time
+import os, json, time, io
 from typing import Dict, Any
 
 import torch
 from torchvision import transforms
+from PIL import Image
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,7 +12,7 @@ from .model_loader import load_resnet_single
 
 
 # =========================
-# 환경 변수/경로
+# 환경 변수 / 경로
 # =========================
 CKPT_PATH = os.getenv("CKPT_PATH", "app/runs/resnet50_malimg.ckpt")
 LABELS_PATH = os.getenv("LABELS_PATH", "app/labels.json")
@@ -28,7 +29,7 @@ torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", "1")))
 torch.backends.cudnn.benchmark = True if DEVICE == "cuda" else False
 
 
-#========================
+# =========================
 # labels 로딩
 # =========================
 with open(LABELS_PATH, "r", encoding="utf-8") as f:
@@ -39,7 +40,7 @@ num_classes = len(idx_to_class)
 
 
 # =========================
-#라벨별 malware type 매핑
+# 라벨별 malware type 매핑
 # =========================
 MALWARE_TYPE_MAP = {
     "Adialer.C": "Dialer",
@@ -67,11 +68,10 @@ MALWARE_TYPE_MAP = {
     "VB.AT": "Worm",
     "Wintrim.BX": "Trojan Downloader",
     "Yuner.A": "Worm",
-    # "Benign" 은 악성 타입 없음 → None 처리
 }
 
 
-# ======================
+# =========================
 # transform
 # =========================
 eval_tfms = transforms.Compose([
@@ -81,12 +81,12 @@ eval_tfms = transforms.Compose([
     transforms.Normalize((0.485,0.456,0.406), (0.229,0.224,0.225)),
 ])
 
-def pil_to_tensor(pil):
+def pil_to_tensor(pil: Image.Image) -> torch.Tensor:
     return eval_tfms(pil).unsqueeze(0)
 
 
 # =========================
-#서버 시작 시 1번만 고정 로드
+# 서버 시작 시 1번만 고정 로드
 # =========================
 model = load_resnet_single(CKPT_PATH, num_classes=num_classes, device=DEVICE)
 model.eval()
@@ -96,8 +96,8 @@ model.eval()
 # FastAPI
 # =========================
 app = FastAPI(
-    title="PE Image Malware Classifier (Single ResNet)",
-    version="1.2.0"
+    title="PE/Image Malware Classifier (Single ResNet)",
+    version="1.3.0"
 )
 
 app.add_middleware(
@@ -124,7 +124,7 @@ def health():
 @app.post("/analyze")
 async def analyze(file: UploadFile = File(...)) -> Dict[str, Any]:
     # -------------------------
-    # 1) 파일 chunk read (메모리 피크 방지)
+    # 1) 파일 chunk read
     # -------------------------
     data = bytearray()
     while True:
@@ -137,12 +137,29 @@ async def analyze(file: UploadFile = File(...)) -> Dict[str, Any]:
     data = bytes(data)
 
     # -------------------------
-    # 2) PE bytes -> PIL (preprocess에서 256x256으로 축소됨)
+    # 입력이 이미지인지 실행파일인지 자동 판별
+    #   - 이미지: 전처리(바이너리 변환) 하지 않고 그대로 사용
+    #   - 실행파일pe: 기존 exe->image 전처리 수행
     # -------------------------
-    pil = read_image_or_binary(data, is_binary_hint=True)
+    filename = (file.filename or "").lower()
+    image_exts = (".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff")
+
+    if filename.endswith(image_exts):
+        #이미지 입력: 그대로 PIL로 열어서 사용
+        try:
+            pil = Image.open(io.BytesIO(data)).convert("L")
+            if pil.size != (IMG_SIZE, IMG_SIZE):
+                pil = pil.resize((IMG_SIZE, IMG_SIZE), resample=Image.BILINEAR)
+            input_type = "image"
+        except Exception:
+            raise HTTPException(400, "이미지 파일을 열 수 없습니다.")
+    else:
+        # 실행파일 입력: bytes → grayscale image 변환
+        pil = read_image_or_binary(data, is_binary_hint=True)
+        input_type = "binary"
 
     # -------------------------
-    # 3) tensor -> inference
+    # tensor -> inference
     # -------------------------
     x = pil_to_tensor(pil).to(DEVICE, non_blocking=True)
 
@@ -160,13 +177,11 @@ async def analyze(file: UploadFile = File(...)) -> Dict[str, Any]:
     pred_label = idx_to_class[pred_idx]
     pred_score = float(probs[pred_idx].item())
 
-    #malware 여부 bool
+    # malware 여부 bool
     is_malware = (pred_label.lower() != "benign")
-
-    #malware type
     malware_type = None if not is_malware else MALWARE_TYPE_MAP.get(pred_label, "Unknown")
 
-    # top-k
+    # top-k (type 포함)
     k = min(3, num_classes)
     topk = torch.topk(probs, k=k)
     top_list = [
@@ -185,10 +200,13 @@ async def analyze(file: UploadFile = File(...)) -> Dict[str, Any]:
 
     return {
         "filename": file.filename,
+        "input_type": input_type,   #파일 타입 
+
         "is_malware": is_malware,
         "prediction": pred_label,
         "prediction_index": pred_idx,
         "malware_type": malware_type,
+
         "score": pred_score,
         "top_families": top_list,
         "latency_ms": latency_ms
