@@ -8,11 +8,6 @@ WIDTH = 256
 TARGET_SIZE = 256  
 
 def bytes_to_image(byte_data: bytes, width: int = WIDTH, target: int = TARGET_SIZE) -> Image.Image:
-    """
-    실행파일(raw bytes)을 grayscale 이미지로 변환한 뒤
-    곧바로 target x target 크기로 축소하여 반환한다.
-    (큰 이미지로 인해 Render 서버에서 메모리 폭발하던 문제 해결)
-    """
     # 1) raw bytes → uint8 array
     arr = np.frombuffer(byte_data, dtype=np.uint8)
 
@@ -31,26 +26,24 @@ def bytes_to_image(byte_data: bytes, width: int = WIDTH, target: int = TARGET_SI
     # 4) L 채널 grayscale PIL 생성
     pil = Image.fromarray(img, mode="L")
 
-    # 5)  핵심: 변환 직후 즉시 target × target 으로 축소 (메모리 절약)
-    if (pil.width, pil.height) != (target, target):
-        pil = pil.resize((target, target), resample=Image.BILINEAR)
+    # 5)  변환 직후 즉시 target × target 으로 축소 
+    #if (pil.width, pil.height) != (target, target):
+    #    pil = pil.resize((target, target), resample=Image.BILINEAR)
 
     return pil
 
 
 def read_image_or_binary(data: bytes, is_binary_hint: bool = True) -> Image.Image:
-    """
-    바이너리(EXE) 또는 JPEG/PNG 이미지 입력을 모두 처리.
-    프론트에서 항상 exe를 올린다면 is_binary_hint=True 유지.
-    """
     if not is_binary_hint:
-        # 이미지로 시도
         try:
             img = Image.open(io.BytesIO(data)).convert("L")
-            # 이미지도 바로 target 사이즈로
-            return img.resize((TARGET_SIZE, TARGET_SIZE), resample=Image.BILINEAR)
+            w, h = img.size
+            if w != WIDTH:
+                new_h = int(h * (WIDTH / w))
+                img = img.resize((WIDTH, new_h), resample=Image.BILINEAR)
+            return img
         except Exception:
             pass
 
-    # 바이너리 또는 실패 시 bytes 변환
+    # 실행파일은 bytes_to_image에서 이미 폭=WIDTH, 높이=H 로 만듦
     return bytes_to_image(data, width=WIDTH, target=TARGET_SIZE)
