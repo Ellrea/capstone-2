@@ -18,7 +18,7 @@ CKPT_PATH = os.getenv("CKPT_PATH", "app/runs/resnet50_malimg.ckpt")
 LABELS_PATH = os.getenv("LABELS_PATH", "app/labels.json")
 
 IMG_SIZE = int(os.getenv("IMG_SIZE", "256"))
-MAX_FILE_MB = float(os.getenv("MAX_FILE_MB", "50")) #이 코드가 용량을 제한하는 코드 
+MAX_FILE_MB = float(os.getenv("MAX_FILE_MB", "50"))
 CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -76,7 +76,7 @@ MALWARE_TYPE_MAP = {
 # =========================
 eval_tfms = transforms.Compose([
     transforms.Grayscale(num_output_channels=3),
-    transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    #transforms.Resize((IMG_SIZE, IMG_SIZE)),  #일단 리사이즈 옵션 제거 테스트
     transforms.ToTensor(),
     transforms.Normalize((0.485,0.456,0.406), (0.229,0.224,0.225)),
 ])
