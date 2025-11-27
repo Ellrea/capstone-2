@@ -76,7 +76,7 @@ MALWARE_TYPE_MAP = {
 # =========================
 eval_tfms = transforms.Compose([
     transforms.Grayscale(num_output_channels=3),
-    #transforms.Resize((IMG_SIZE, IMG_SIZE)),  #일단 리사이즈 옵션 제거 테스트
+    transforms.Resize((IMG_SIZE, IMG_SIZE)),  #일단 리사이즈 옵션 제거 테스트 여기 코드 주석처리하면서 진행
     transforms.ToTensor(),
     transforms.Normalize((0.485,0.456,0.406), (0.229,0.224,0.225)),
 ])
